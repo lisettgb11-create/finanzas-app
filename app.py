@@ -1,8 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.express as px
-from datetime import datetime, timedelta
+from datetime import datetime
 import json
 import os
 
@@ -10,25 +8,20 @@ import os
 st.set_page_config(
     page_title="Organiza Tus Finanzas · Finanzas con Lisett García",
     page_icon="💰",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# Paleta de colores (vino/dorado)
+# Paleta de colores
 WINE_DARK = "#4f1326"
 WINE = "#7a1f3d"
 WINE_LIGHT = "#a13a5c"
 GOLD = "#b08d57"
 BG = "#fbf9fa"
-GREEN = "#16a34a"
-RED = "#dc2626"
 
 # CSS personalizado
 st.markdown(f"""
 <style>
-    * {{ font-family: 'Poppins', sans-serif; }}
     body {{ background-color: {BG}; }}
-    
     .main-title {{
         color: {WINE_DARK};
         font-size: 2.5em;
@@ -36,7 +29,6 @@ st.markdown(f"""
         text-align: center;
         margin: 20px 0;
     }}
-    
     .section-title {{
         color: {WINE};
         font-size: 1.5em;
@@ -45,28 +37,6 @@ st.markdown(f"""
         padding-left: 15px;
         margin: 20px 0 15px 0;
     }}
-    
-    .metric-card {{
-        background: linear-gradient(135deg, {WINE_LIGHT}, {WINE});
-        color: white;
-        padding: 20px;
-        border-radius: 12px;
-        text-align: center;
-        font-weight: 600;
-    }}
-    
-    .stTabs [data-baseweb="tab-list"] button {{
-        color: {WINE};
-        font-weight: 600;
-    }}
-    
-    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {{
-        color: white !important;
-        background-color: {WINE} !important;
-    }}
-    
-    .positive {{ color: {GREEN}; font-weight: 700; }}
-    .negative {{ color: {RED}; font-weight: 700; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -133,7 +103,7 @@ st.markdown("<h1 class='main-title'>💰 Organiza Tus Finanzas</h1>", unsafe_all
 st.markdown("<p style='text-align: center; color: #a13a5c; font-size: 16px;'>Finanzas con Lisett García • Del desorden a la Paz</p>", unsafe_allow_html=True)
 
 # Selector de mes
-col1, col2, col3 = st.columns([2, 2, 2])
+col1, col2 = st.columns(2)
 with col1:
     month = st.selectbox("📅 Mes", ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", 
                                      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"])
@@ -143,7 +113,7 @@ with col2:
 st.session_state.data["mes_year"] = f"{month} {year}"
 
 # TABS PRINCIPALES
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["💰 INGRESOS", "📌 GASTOS FIJOS", "📊 GASTOS VARIABLES", "💳 TARJETA", "💸 DEUDAS"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["💰 INGRESOS", "📌 GASTOS FIJOS", "📊 GASTOS VARIABLES", "💳 TARJETA", "💸 DEUDAS", "📊 RESUMEN"])
 
 # ==================== TAB 1: INGRESOS ====================
 with tab1:
@@ -183,7 +153,7 @@ with tab1:
                 st.rerun()
     
     totales = calculate_totals(st.session_state.data)
-    st.markdown(f"<div class='metric-card'><p>Total Ingresos del Mes</p><p style='font-size: 28px;'>{format_money(totales['ingresos'])}</p></div>", unsafe_allow_html=True)
+    st.info(f"💰 **Total Ingresos:** {format_money(totales['ingresos'])}")
 
 # ==================== TAB 2: GASTOS FIJOS ====================
 with tab2:
@@ -219,7 +189,7 @@ with tab2:
                 st.rerun()
     
     totales = calculate_totals(st.session_state.data)
-    st.markdown(f"<div class='metric-card' style='background: linear-gradient(135deg, #f97316, #ea580c);'><p>Total Gastos Fijos</p><p style='font-size: 28px;'>{format_money(totales['gastos_fijos'])}</p></div>", unsafe_allow_html=True)
+    st.warning(f"📌 **Total Gastos Fijos:** {format_money(totales['gastos_fijos'])}")
 
 # ==================== TAB 3: GASTOS VARIABLES ====================
 with tab3:
@@ -255,7 +225,7 @@ with tab3:
                 st.rerun()
     
     totales = calculate_totals(st.session_state.data)
-    st.markdown(f"<div class='metric-card' style='background: linear-gradient(135deg, #ef4444, #dc2626);'><p>Total Gastos Variables</p><p style='font-size: 28px;'>{format_money(totales['gastos_variables'])}</p></div>", unsafe_allow_html=True)
+    st.error(f"📊 **Total Gastos Variables:** {format_money(totales['gastos_variables'])}")
 
 # ==================== TAB 4: TARJETA DE CRÉDITO ====================
 with tab4:
@@ -280,15 +250,16 @@ with tab4:
             st.rerun()
     
     st.write("---")
+    st.write("**Gastos por Categoría:**")
     
-    # Mostrar todas las categorías con sus gastos
     cols = st.columns(3)
     for idx, cat in enumerate(TARJETA_CATEGORIAS):
         with cols[idx % 3]:
             items = st.session_state.data["tarjeta"].get(cat, [])
             cat_total = sum(float(i.get("monto", 0)) for i in items)
             
-            st.write(f"**{cat}** - {format_money(cat_total)}")
+            st.write(f"**{cat}**")
+            st.write(f"Total: {format_money(cat_total)}")
             
             for i, item in enumerate(items):
                 col1, col2 = st.columns([3, 0.5])
@@ -297,9 +268,6 @@ with tab4:
                     st.session_state.data["tarjeta"][cat].pop(i)
                     save_data(st.session_state.data)
                     st.rerun()
-    
-    totales = calculate_totals(st.session_state.data)
-    st.markdown(f"<div class='metric-card' style='background: linear-gradient(135deg, {WINE}, {WINE_LIGHT});'><p>Total Tarjeta de Crédito</p><p style='font-size: 28px;'>{format_money(totales['tarjeta'])}</p></div>", unsafe_allow_html=True)
 
 # ==================== TAB 5: DEUDAS ====================
 with tab5:
@@ -339,88 +307,64 @@ with tab5:
                 st.rerun()
     
     totales = calculate_totals(st.session_state.data)
-    st.markdown(f"<div class='metric-card' style='background: linear-gradient(135deg, #dc2626, #b91c1c);'><p>Total Cuotas de Deudas</p><p style='font-size: 28px;'>{format_money(totales['deudas'])}</p></div>", unsafe_allow_html=True)
+    st.error(f"💸 **Total Cuotas de Deudas:** {format_money(totales['deudas'])}")
 
-# ==================== RESUMEN Y SALDO ====================
-st.markdown("---")
-st.markdown("<h2 class='section-title'>📋 RESUMEN FINANCIERO DEL MES</h2>", unsafe_allow_html=True)
-
-totales = calculate_totals(st.session_state.data)
-
-col1, col2, col3, col4, col5 = st.columns(5)
-
-with col1:
-    st.metric("Ingresos", format_money(totales['ingresos']))
-
-with col2:
-    st.metric("Gastos Fijos", format_money(totales['gastos_fijos']))
-
-with col3:
-    st.metric("Gastos Variables", format_money(totales['gastos_variables']))
-
-with col4:
-    st.metric("Tarjeta", format_money(totales['tarjeta']))
-
-with col5:
-    st.metric("Deudas", format_money(totales['deudas']))
-
-st.markdown("---")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.markdown(f"<div class='metric-card'><p>Total Gastos</p><p style='font-size: 32px;'>{format_money(totales['total_gastos'])}</p></div>", unsafe_allow_html=True)
-
-with col2:
-    color = "green" if totales['saldo'] >= 0 else "red"
-    st.markdown(f"<div class='metric-card' style='background: linear-gradient(135deg, {GOLD}, {WINE_LIGHT});'><p>💵 SALDO RESTANTE</p><p style='font-size: 32px; color: white;'>{format_money(totales['saldo'])}</p></div>", unsafe_allow_html=True)
-
-with col3:
-    porcentaje_ahorro = (totales['saldo'] / totales['ingresos'] * 100) if totales['ingresos'] > 0 else 0
-    st.markdown(f"<div class='metric-card' style='background: linear-gradient(135deg, #16a34a, #15803d);'><p>% de Ahorro</p><p style='font-size: 32px;'>{porcentaje_ahorro:.1f}%</p></div>", unsafe_allow_html=True)
-
-# ==================== GRÁFICOS ====================
-st.markdown("---")
-st.markdown("<h2 class='section-title'>📊 Visualización de Gastos</h2>", unsafe_allow_html=True)
-
-col1, col2 = st.columns(2)
-
-# Gráfico 1: Distribución de gastos
-with col1:
-    datos_pie = {
-        "Gastos Fijos": totales['gastos_fijos'],
-        "Gastos Variables": totales['gastos_variables'],
-        "Tarjeta": totales['tarjeta'],
-        "Deudas": totales['deudas']
-    }
-    datos_pie = {k: v for k, v in datos_pie.items() if v > 0}
+# ==================== TAB 6: RESUMEN ====================
+with tab6:
+    st.markdown("<h2 class='section-title'>📋 RESUMEN FINANCIERO DEL MES</h2>", unsafe_allow_html=True)
     
-    if datos_pie:
-        fig1 = go.Figure(data=[go.Pie(
-            labels=list(datos_pie.keys()),
-            values=list(datos_pie.values()),
-            marker=dict(colors=[WINE_DARK, WINE, WINE_LIGHT, GOLD])
-        )])
-        fig1.update_layout(
-            title="Distribución de Gastos",
-            height=400,
-            margin=dict(l=0, r=0, t=40, b=0)
-        )
-        st.plotly_chart(fig1, use_container_width=True)
-
-# Gráfico 2: Ingresos vs Gastos
-with col2:
-    fig2 = go.Figure(data=[
-        go.Bar(name="Ingresos", x=["Mes"], y=[totales['ingresos']], marker_color=GREEN),
-        go.Bar(name="Gastos", x=["Mes"], y=[totales['total_gastos']], marker_color=RED)
-    ])
-    fig2.update_layout(
-        title="Ingresos vs Gastos",
-        height=400,
-        barmode='group',
-        margin=dict(l=0, r=0, t=40, b=0)
-    )
-    st.plotly_chart(fig2, use_container_width=True)
+    totales = calculate_totals(st.session_state.data)
+    
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    with col1:
+        st.metric("Ingresos", format_money(totales['ingresos']))
+    with col2:
+        st.metric("Gastos Fijos", format_money(totales['gastos_fijos']))
+    with col3:
+        st.metric("Gastos Variables", format_money(totales['gastos_variables']))
+    with col4:
+        st.metric("Tarjeta", format_money(totales['tarjeta']))
+    with col5:
+        st.metric("Deudas", format_money(totales['deudas']))
+    
+    st.markdown("---")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.info(f"**Total Gastos**\n\n{format_money(totales['total_gastos'])}")
+    
+    with col2:
+        if totales['saldo'] >= 0:
+            st.success(f"💵 **SALDO RESTANTE**\n\n{format_money(totales['saldo'])}")
+        else:
+            st.error(f"⚠️ **SALDO EN ROJO**\n\n{format_money(totales['saldo'])}")
+    
+    with col3:
+        porcentaje_ahorro = (totales['saldo'] / totales['ingresos'] * 100) if totales['ingresos'] > 0 else 0
+        st.info(f"📊 **% de Ahorro**\n\n{porcentaje_ahorro:.1f}%")
+    
+    st.markdown("---")
+    
+    # Tabla de resumen
+    st.write("**Desglose detallado:**")
+    
+    resumen_data = {
+        "Concepto": ["Ingresos", "Gastos Fijos", "Gastos Variables", "Tarjeta", "Deudas", "TOTAL GASTOS", "SALDO FINAL"],
+        "Monto": [
+            format_money(totales['ingresos']),
+            format_money(totales['gastos_fijos']),
+            format_money(totales['gastos_variables']),
+            format_money(totales['tarjeta']),
+            format_money(totales['deudas']),
+            format_money(totales['total_gastos']),
+            format_money(totales['saldo'])
+        ]
+    }
+    
+    df = pd.DataFrame(resumen_data)
+    st.dataframe(df, use_container_width=True, hide_index=True)
 
 # ==================== REFLEXIÓN ====================
 st.markdown("---")
@@ -457,4 +401,4 @@ with col2:
 
 # Footer
 st.markdown("---")
-st.markdown(f"<p style='text-align: center; color: #a13a5c; font-size: 12px;'>Finanzas con Lisett García 💜 | Made with Streamlit | © 2026</p>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align: center; color: #a13a5c; font-size: 12px;'>Finanzas con Lisett García 💜 | Made with Streamlit</p>", unsafe_allow_html=True)
