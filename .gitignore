@@ -1,0 +1,8 @@
+finanzas_completo.json
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.streamlit/secrets.toml
+*.jpg
+*.png
